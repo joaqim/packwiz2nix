@@ -1,4 +1,4 @@
-let
+{lib, ...}: let
   inherit
     (builtins)
     attrNames
@@ -23,7 +23,7 @@ let
   # replaces `.pw.toml` extensions with `.jar`
   # to correct the store paths of jarfiles
   # string -> string
-  fixupName = replaceStrings [".pw.toml"] [".jar"];
+  fixupName = name: replaceStrings [".pw.toml"] [".jar"] (lib.strings.sanitizeDerivationName name);
 
   # *pkgs*.fetchurl wrapper that downloads a
   # jarfile mod. pkgs.fetchurl is used over builtins
