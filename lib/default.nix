@@ -1,4 +1,4 @@
-{lib, ...}: let
+let
   inherit
     (builtins)
     attrNames
@@ -14,15 +14,11 @@
     toFile
     toJSON
     ;
-
+  
   # loads data from a toml json given
   # the directory (dir) and filename (name)
   # string -> string -> attrset
   fromMod = dir: name: fromTOML (readFile "${dir}/${name}");
-
-  # satinize the store paths of mod files
-  # string -> string
-  sanitizeStorePath = name: lib.strings.sanitizeDerivationName name;
 
   # replaces `.pw.toml` extensions with `.jar`
   # to correct the store paths of jarfiles
@@ -36,7 +32,7 @@
   # attrset -> string -> attrset -> store path
   mkMod = pkgs: name: mod:
     pkgs.fetchurl {
-      name = sanitizeStorePath (withJarExtension name);
+      name = pkgs.lib.strings.sanitizeDerivationName (withJarExtension name);
       inherit (mod) url sha256;
     };
 
@@ -56,12 +52,12 @@
   # files for mods. make sure they are the only files in the folder
   #
   # path -> file
-  mkChecksums = dir: let
+  mkChecksums = pkgs: dir: let
     mods = readDir dir;
 
     getChecksum = name: url:
       hashFile "sha256" (fetchurl {
-        name = sanitizeStorePath (withJarExtension name);
+        name = pkgs.lib.strings.sanitizeDerivationName (withJarExtension name);
         inherit url;
       });
 
@@ -159,7 +155,7 @@ in {
   # attrset -> path -> attrset
   mkChecksumsApp = pkgs: dir: let
     inherit (pkgs) writeShellScriptBin;
-    checksums = mkChecksums dir;
+    checksums = mkChecksums pkgs dir;
     name = "generate-checksums";
     script = writeShellScriptBin name ''
       cat ${checksums} > checksums.json
