@@ -20,10 +20,14 @@
   # string -> string -> attrset
   fromMod = dir: name: fromTOML (readFile "${dir}/${name}");
 
+  # satinize the store paths of mod files
+  # string -> string
+  sanitizeStorePath = name: lib.strings.sanitizeDerivationName name;
+
   # replaces `.pw.toml` extensions with `.jar`
   # to correct the store paths of jarfiles
   # string -> string
-  fixupName = name: replaceStrings [".pw.toml"] [".jar"] (lib.strings.sanitizeDerivationName name);
+  withJarExtension = name: replaceStrings [".pw.toml"] [".jar"] name;
 
   # *pkgs*.fetchurl wrapper that downloads a
   # jarfile mod. pkgs.fetchurl is used over builtins
@@ -32,7 +36,7 @@
   # attrset -> string -> attrset -> store path
   mkMod = pkgs: name: mod:
     pkgs.fetchurl {
-      name = fixupName name;
+      name = sanitizeStorePath (withJarExtension name);
       inherit (mod) url sha256;
     };
 
@@ -57,7 +61,7 @@
 
     getChecksum = name: url:
       hashFile "sha256" (fetchurl {
-        name = fixupName name;
+        name = sanitizeStorePath (withJarExtension name);
         inherit url;
       });
 
@@ -170,7 +174,7 @@ in {
   # attrset -> attrset
   mkModLinks = mods: let
     fixup = map (name: {
-      name = "mods/" + fixupName name;
+      name = "mods/" + withJarExtension name;
       value = mods.${name};
     }) (attrNames mods);
   in
